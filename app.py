@@ -4,7 +4,7 @@ import registration_page
 from auth import authenticate
 
 PAGES = {
-    "Registration": registration_page,
+    "Registration:lower_left_ballpoint_pen:": registration_page,
     "Member List": memberlist_page
 }
 
@@ -12,7 +12,7 @@ def main():
     if 'refresh_counter' not in st.session_state:
         st.session_state['refresh_counter'] = 0
 
-    st.title("BROTOT")
+    st.title("BROTOT:muscle:")
     st.write("by bli kadek")
     if authenticate():  # Checks if the user is authenticated
         st.sidebar.title("Navigation")
