@@ -182,11 +182,20 @@ def app():
         st.session_state['refresh_counter'] += 1  # Increment to refresh connection when page is first loaded
 
     # Streamlit page setup
-    st.title("Member List")
+     st.title("Member List")
 
     # Filter setup
-    filter_tag = st.selectbox("Filter by Membership Status", ["All", "Green", "Yellow", "Red"])
-    search_name = st.text_input("Enter member's name or nickname to search", key="search")
+    search_name = st.text_input("Search", key="search")
+
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        filter_tag = st.selectbox("Filter by Status", ["All", "Green", "Yellow", "Red"])
+
+    with col2:
+        sort_order = st.selectbox("Sort by days left", ["Ascending", "Descending"])
+
     st.markdown("---")
 
     # Initialize Google Sheets connection and fetch data
@@ -208,6 +217,12 @@ def app():
             filtered_df['nick_name'].str.lower().str.contains(search_name.lower()) |
             filtered_df['full_name'].str.lower().str.contains(search_name.lower())
         ]
+
+    # Apply sorting
+    ascending_order = True if sort_order == "Ascending" else False
+    filtered_df = filtered_df.sort_values(by='days_left', ascending=ascending_order, na_position='last')
+
+    # Rest of your code...
 
     # Initialize session state for toggling forms
     if 'show_form' not in st.session_state:
