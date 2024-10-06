@@ -182,7 +182,7 @@ def app():
         st.session_state['refresh_counter'] += 1  # Increment to refresh connection when page is first loaded
 
     # Streamlit page setup
-     st.title("Member List")
+    st.title("Member List")
 
     # Filter setup
     search_name = st.text_input("Search", key="search")
