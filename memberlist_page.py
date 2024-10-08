@@ -35,6 +35,21 @@ def app():
         else:
             return None  # Invalid phone number
 
+    def update_phone_number(client, member_id, new_phone_number):
+        spreadsheet_id = st.secrets["google_sheets"]["spreadsheet_id"]
+        members_sheet = client.open_by_key(spreadsheet_id).worksheet('Members')
+
+        # Find the row number where the member_id is located
+        cell = members_sheet.find(str(member_id))
+        if cell:
+            row_number = cell.row
+            # Assuming 'phone_number' is in column 4 (adjust the index as per your sheet)
+            phone_number_col_index = members_df.columns.get_loc('phone_number') + 1  # Adding 1 because Google Sheets index starts at 1
+            members_sheet.update_cell(row_number, phone_number_col_index, new_phone_number)
+        else:
+            st.error(f"Member ID {member_id} not found in the sheet.")
+
+
     def create_whatsapp_link(formatted_number, message_template):
         """
         Creates a WhatsApp URL with a pre-filled message.
@@ -232,6 +247,10 @@ def app():
     MESSAGE_TEMPLATE = "Good day, resident of Brotot Barbell Club!\nPlease renew your gym membership as soon as possible!\n\nBest Regards,\nIdam"
 
     # Display each member's details in cards
+    if 'show_phone_form' not in st.session_state:
+        st.session_state['show_phone_form'] = {}
+
+    # Display each member's details in cards
     for index, row in filtered_df.iterrows():
         member_id = row['member_id']
         membership_expiration = row['membership_expiration']
@@ -259,20 +278,41 @@ def app():
                 else:
                     st.markdown(f"**Phone Number**: {original_phone} (Invalid Format)")
 
-                if pd.isnull(membership_expiration):
-                    # No transactions found
-                    st.markdown(f"**Membership Expires**: No transactions found")
-                    st.error('**Membership Expired!**')
-                else:
-                    expiration_date = membership_expiration.date()
-                    st.markdown(f"**Membership Expires**: {expiration_date.strftime('%Y-%m-%d')}")
-                    # Determine the sign to display
-                    if days_left < 0:
-                        st.error('**Membership Expired!**')
-                    elif days_left <= 3:
-                        st.warning(f'**{days_left} days left!**')
-                    else:
-                        st.success(f'**{days_left} days left**')
+                # Add "Edit Phone Number" button
+                if f"show_phone_form_{index}" not in st.session_state:
+                    st.session_state[f"show_phone_form_{index}"] = False
+
+                if st.button("Edit Phone Number", key=f"edit_phone_{index}"):
+                    st.session_state[f"show_phone_form_{index}"] = True
+
+                if st.session_state[f"show_phone_form_{index}"]:
+                    with st.form(key=f"phone_form_{index}"):
+                        st.write("**Update Phone Number**")
+                        new_phone_number = st.text_input("New Phone Number", value=original_phone, key=f"new_phone_{index}")
+                        submitted_phone = st.form_submit_button("Update")
+                        if submitted_phone:
+                            update_phone_number(client, member_id, new_phone_number)
+                            st.success("Phone number updated!")
+
+                            # Clear cached data to refresh member data without refreshing connection
+                            get_member_data.clear()
+                            # Re-fetch the data
+                            members_df, transactions_df = get_member_data(client)
+                            members_processed_df = process_member_data(members_df, transactions_df)
+
+                            # Re-apply filters
+                            filtered_df = members_processed_df.copy()
+                            if filter_tag != "All":
+                                filtered_df = filtered_df[filtered_df['membership_tag'] == filter_tag]
+                            if search_name:
+                                filtered_df = filtered_df[
+                                    filtered_df['nick_name'].str.lower().str.contains(search_name.lower()) |
+                                    filtered_df['full_name'].str.lower().str.contains(search_name.lower())
+                                ]
+                            st.session_state[f"show_phone_form_{index}"] = False
+
+                    if st.button("Cancel Edit", key=f"cancel_phone_{index}"):
+                        st.session_state[f"show_phone_form_{index}"] = False
 
                 if f"show_form_{index}" not in st.session_state:
                     st.session_state[f"show_form_{index}"] = False
