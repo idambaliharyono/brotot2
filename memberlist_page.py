@@ -251,6 +251,7 @@ def app():
         st.session_state['show_phone_form'] = {}
 
     # Display each member's details in cards
+    # Display each member's details in cards
     for index, row in filtered_df.iterrows():
         member_id = row['member_id']
         membership_expiration = row['membership_expiration']
@@ -262,9 +263,10 @@ def app():
 
             with cols[0]:
                 st.markdown(f"""
-                <img src="{row['photo_url']}" style="width:150px; height:200px; object-fit:cover; border-radius:10px;">
+                <img src="{row['photo_url']}" style="width:200px; height:266px; object-fit:cover; border-radius:10px;">
                 """, unsafe_allow_html=True)
             with cols[1]:
+                
                 st.markdown(f"**{row['nick_name']}**")
 
                 # Format the phone number
@@ -278,9 +280,16 @@ def app():
                 else:
                     st.markdown(f"**Phone Number**: {original_phone} (Invalid Format)")
 
-                # Add "Edit Phone Number" button
-                if f"show_phone_form_{index}" not in st.session_state:
-                    st.session_state[f"show_phone_form_{index}"] = False
+                # Display the days left with appropriate color coding
+                if days_left is None or days_left < 0:
+                    st.error(f"Membership expired {abs(days_left) if days_left is not None else ''} days ago.")
+                elif days_left <= 3:
+                    st.warning(f"Membership expires in {days_left} days.")
+                else:
+                    st.success(f"Membership expires in {days_left} days.")
+                    # Add "Edit Phone Number" button
+                    if f"show_phone_form_{index}" not in st.session_state:
+                        st.session_state[f"show_phone_form_{index}"] = False
 
                 if st.button("Edit Phone Number", key=f"edit_phone_{index}"):
                     st.session_state[f"show_phone_form_{index}"] = True
