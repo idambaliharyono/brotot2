@@ -5,8 +5,15 @@ from google.oauth2 import service_account
 from datetime import datetime, timedelta
 from gspread_formatting import CellFormat, NumberFormat, format_cell_range
 import urllib.parse
+import cloudinary
 
 def app():
+    cloudinary.config(
+        cloud_name=st.secrets['cloudinary']['cloud_name'],  # Your Cloudinary cloud name
+        api_key=st.secrets['cloudinary']['api_key'],        # Your Cloudinary API key
+        api_secret=st.secrets['cloudinary']['api_secret']   # Your Cloudinary API secret
+    )
+
     # Function to format phone numbers
     def format_phone_number(phone_number):
         """
@@ -246,9 +253,6 @@ def app():
     # Define the message template
     MESSAGE_TEMPLATE = "Good day, resident of Brotot Barbell Club!\nPlease renew your gym membership as soon as possible!\n\nBest Regards,\nIdam"
 
-    # Display each member's details in cards
-    if 'show_phone_form' not in st.session_state:
-        st.session_state['show_phone_form'] = {}
 
     # Display each member's details in cards
     # Display each member's details in cards
@@ -267,7 +271,19 @@ def app():
                 """, unsafe_allow_html=True)
             with cols[1]:
                 
-                st.markdown(f"**{row['nick_name']}**")
+                st.markdown("""
+                    <link href="https://fonts.googleapis.com/css2?family=Holtwood+One+SC&display=swap" rel="stylesheet">
+                    """, unsafe_allow_html=True)
+
+                st.markdown(f"""
+                    <span style='font-family: "Holtwood One SC", serif;
+                    font-weight: 400;
+                    font-style: normal, cursive; font-size:32px; color:#FFFFFF;'>
+                        {row['nick_name']}
+                    </span>
+                    """, unsafe_allow_html=True)
+
+
 
                 # Format the phone number
                 original_phone = row['phone_number']
@@ -276,7 +292,7 @@ def app():
                     # Create WhatsApp link
                     whatsapp_link = create_whatsapp_link(formatted_phone, MESSAGE_TEMPLATE)
                     # Display clickable phone number
-                    st.markdown(f"**Phone Number**: [{original_phone}]({whatsapp_link})")
+                    st.markdown(f"[**Send Whatsapp Message**]({whatsapp_link})")
                 else:
                     st.markdown(f"**Phone Number**: {original_phone} (Invalid Format)")
 
@@ -287,41 +303,7 @@ def app():
                     st.warning(f"Membership expires in {days_left} days.")
                 else:
                     st.success(f"Membership expires in {days_left} days.")
-                    # Add "Edit Phone Number" button
-                    if f"show_phone_form_{index}" not in st.session_state:
-                        st.session_state[f"show_phone_form_{index}"] = False
-
-                if st.button("Edit Phone Number", key=f"edit_phone_{index}"):
-                    st.session_state[f"show_phone_form_{index}"] = True
-
-                if st.session_state[f"show_phone_form_{index}"]:
-                    with st.form(key=f"phone_form_{index}"):
-                        st.write("**Update Phone Number**")
-                        new_phone_number = st.text_input("New Phone Number", value=original_phone, key=f"new_phone_{index}")
-                        submitted_phone = st.form_submit_button("Update")
-                        if submitted_phone:
-                            update_phone_number(client, member_id, new_phone_number)
-                            st.success("Phone number updated!")
-
-                            # Clear cached data to refresh member data without refreshing connection
-                            get_member_data.clear()
-                            # Re-fetch the data
-                            members_df, transactions_df = get_member_data(client)
-                            members_processed_df = process_member_data(members_df, transactions_df)
-
-                            # Re-apply filters
-                            filtered_df = members_processed_df.copy()
-                            if filter_tag != "All":
-                                filtered_df = filtered_df[filtered_df['membership_tag'] == filter_tag]
-                            if search_name:
-                                filtered_df = filtered_df[
-                                    filtered_df['nick_name'].str.lower().str.contains(search_name.lower()) |
-                                    filtered_df['full_name'].str.lower().str.contains(search_name.lower())
-                                ]
-                            st.session_state[f"show_phone_form_{index}"] = False
-
-                    if st.button("Cancel Edit", key=f"cancel_phone_{index}"):
-                        st.session_state[f"show_phone_form_{index}"] = False
+                    # Add "Edit Phone Number" butto
 
                 if f"show_form_{index}" not in st.session_state:
                     st.session_state[f"show_form_{index}"] = False
