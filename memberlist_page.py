@@ -3,7 +3,6 @@ import pandas as pd
 import gspread
 from google.oauth2 import service_account
 from datetime import datetime, timedelta
-from gspread_formatting import CellFormat, NumberFormat, format_cell_range
 import urllib.parse
 import cloudinary
 
@@ -56,7 +55,6 @@ def app():
         else:
             st.error(f"Member ID {member_id} not found in the sheet.")
 
-
     def create_whatsapp_link(formatted_number, message_template):
         """
         Creates a WhatsApp URL with a pre-filled message.
@@ -85,10 +83,8 @@ def app():
     def calculate_expiration(last_transaction_date, duration_days):
         return last_transaction_date + timedelta(days=duration_days)
 
-    # Initialize Google Sheets connection
-    @st.cache_resource
-    def init_connection(refresh_counter):
-        # We include refresh_counter to control cache invalidation
+    # Initialize Google Sheets connection (without caching)
+    def init_connection():
         scope = [
             "https://spreadsheets.google.com/feeds",
             "https://www.googleapis.com/auth/spreadsheets",
@@ -102,8 +98,7 @@ def app():
         client = gspread.authorize(creds)
         return client
 
-    # Fetch data from Google Sheets
-    @st.cache_data
+    # Fetch data from Google Sheets (without caching)
     def get_member_data(_client):
         spreadsheet_id = st.secrets["google_sheets"]["spreadsheet_id"]
         members_sheet = _client.open_by_key(spreadsheet_id).worksheet('Members')
@@ -194,21 +189,41 @@ def app():
 
         return members_with_last_tx
 
-    # Initialize or update the refresh counter in the session state
-    if 'refresh_counter' not in st.session_state:
-        st.session_state['refresh_counter'] = 0
+    # Remove refresh_counter logic since we're using session state
+    # Initialize session state variables
+    if 'logged_in' not in st.session_state:
+        st.session_state['logged_in'] = False  # Or set to True if already logged in
 
-    # Check if the page has been loaded before
-    if 'memberlist_page_loaded' not in st.session_state:
-        st.session_state['memberlist_page_loaded'] = True
-        st.session_state['refresh_counter'] += 1  # Increment to refresh connection when page is first loaded
+    # Simulate a login process (you should replace this with your actual login logic)
+    if not st.session_state['logged_in']:
+        st.info("Please log in to access the member list.")
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        if st.button("Login"):
+            # Replace with your authentication logic
+            if username == "admin" and password == "password":
+                st.session_state['logged_in'] = True
+                st.success("Logged in successfully!")
+                # Fetch data and store in session state upon login
+                st.session_state['client'] = init_connection()
+                st.session_state['members_df'], st.session_state['transactions_df'] = get_member_data(st.session_state['client'])
+            else:
+                st.error("Invalid username or password.")
+        return  # Stop the app here until logged in
+
+    # Use data from session state
+    client = st.session_state['client']
+    members_df = st.session_state['members_df']
+    transactions_df = st.session_state['transactions_df']
+
+    # Process member data
+    members_processed_df = process_member_data(members_df, transactions_df)
 
     # Streamlit page setup
     st.title("Member List")
 
     # Filter setup
     search_name = st.text_input("Search", key="search")
-
 
     col1, col2 = st.columns(2)
 
@@ -219,13 +234,6 @@ def app():
         sort_order = st.selectbox("Sort by days left", ["Ascending", "Descending"])
 
     st.markdown("---")
-
-    # Initialize Google Sheets connection and fetch data
-    client = init_connection(st.session_state['refresh_counter'])
-    members_df, transactions_df = get_member_data(client)
-
-    # Process member data
-    members_processed_df = process_member_data(members_df, transactions_df)
 
     # Apply filters
     filtered_df = members_processed_df.copy()
@@ -244,8 +252,6 @@ def app():
     ascending_order = True if sort_order == "Ascending" else False
     filtered_df = filtered_df.sort_values(by='days_left', ascending=ascending_order, na_position='last')
 
-    # Rest of your code...
-
     # Initialize session state for toggling forms
     if 'show_form' not in st.session_state:
         st.session_state['show_form'] = {}
@@ -253,8 +259,6 @@ def app():
     # Define the message template
     MESSAGE_TEMPLATE = "Good day, resident of Brotot Barbell Club!\nPlease renew your gym membership as soon as possible!\n\nBest Regards,\nIdam"
 
-
-    # Display each member's details in cards
     # Display each member's details in cards
     for index, row in filtered_df.iterrows():
         member_id = row['member_id']
@@ -270,7 +274,6 @@ def app():
                 <img src="{row['photo_url']}" style="width:200px; height:266px; object-fit:cover; border-radius:10px;">
                 """, unsafe_allow_html=True)
             with cols[1]:
-                
                 st.markdown("""
                     <link href="https://fonts.googleapis.com/css2?family=Holtwood+One+SC&display=swap" rel="stylesheet">
                     """, unsafe_allow_html=True)
@@ -282,8 +285,6 @@ def app():
                         {row['nick_name']}
                     </span>
                     """, unsafe_allow_html=True)
-
-
 
                 # Format the phone number
                 original_phone = row['phone_number']
@@ -303,7 +304,6 @@ def app():
                     st.warning(f"Membership expires in {days_left} days.")
                 else:
                     st.success(f"Membership expires in {days_left} days.")
-                    # Add "Edit Phone Number" butto
 
                 if f"show_form_{index}" not in st.session_state:
                     st.session_state[f"show_form_{index}"] = False
@@ -347,11 +347,13 @@ def app():
                             )
                             st.success("Membership renewed!")
 
-                            # Clear cached data to refresh member data without refreshing connection
-                            get_member_data.clear()
-                            # Re-fetch the data
-                            members_df, transactions_df = get_member_data(client)
-                            members_processed_df = process_member_data(members_df, transactions_df)
+                            # Remove data from session state to force refresh
+                            del st.session_state['members_df']
+                            del st.session_state['transactions_df']
+
+                            # Re-fetch the data and store it in session state
+                            st.session_state['members_df'], st.session_state['transactions_df'] = get_member_data(client)
+                            members_processed_df = process_member_data(st.session_state['members_df'], st.session_state['transactions_df'])
 
                             # Re-apply filters
                             filtered_df = members_processed_df.copy()
