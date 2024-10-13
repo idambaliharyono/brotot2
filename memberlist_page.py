@@ -191,26 +191,10 @@ def app():
 
     # Remove refresh_counter logic since we're using session state
     # Initialize session state variables
-    if 'logged_in' not in st.session_state:
-        st.session_state['logged_in'] = False  # Or set to True if already logged in
 
-    # Simulate a login process (you should replace this with your actual login logic)
-    if not st.session_state['logged_in']:
-        st.info("Please log in to access the member list.")
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        if st.button("Login"):
-            # Replace with your authentication logic
-            if username == "admin" and password == "password":
-                st.session_state['logged_in'] = True
-                st.success("Logged in successfully!")
-                # Fetch data and store in session state upon login
-                st.session_state['client'] = init_connection()
-                st.session_state['members_df'], st.session_state['transactions_df'] = get_member_data(st.session_state['client'])
-            else:
-                st.error("Invalid username or password.")
-        return  # Stop the app here until logged in
-
+    st.session_state['client'] = init_connection()
+    st.session_state['members_df'], st.session_state['transactions_df'] = get_member_data(st.session_state['client'])
+    
     # Use data from session state
     client = st.session_state['client']
     members_df = st.session_state['members_df']
