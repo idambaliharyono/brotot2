@@ -1,11 +1,14 @@
 import streamlit as st
 import memberlist_page
 import registration_page
+import edit_members
 from auth import authenticate
 
 PAGES = {
     "Registration:lower_left_ballpoint_pen:": registration_page,
-    "Member List": memberlist_page
+    "Member List": memberlist_page,
+    "Edit Member's Info":edit_members
+    
 }
 
 def main():
