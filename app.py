@@ -6,10 +6,9 @@ from auth import authenticate
 
 
 PAGES = {
-    "Registration:lower_left_ballpoint_pen:": registration_page,
+    "Registration": registration_page,
     "Member List": memberlist_page,
-    "Edit Member's Info":edit_members
-    
+    "Edit Member's Data": edit_members
 }
 
 def main():
