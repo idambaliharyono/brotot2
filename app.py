@@ -35,7 +35,7 @@ def main():
         """, unsafe_allow_html=True)
 
         # Use the custom style class in your Markdown
-        st.markdown('<p class="custom-font">BROTOT 💪</p>', unsafe_allow_html=True)
+        st.markdown('<p class="custom-font">BROTOT</p>', unsafe_allow_html=True)
 
     with col2:
         st.markdown("""
