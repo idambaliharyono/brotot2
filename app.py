@@ -28,7 +28,7 @@ def main():
         <style>
         .custom-font {
             font-family: 'Roboto', sans-serif; /* This font is now from Google Fonts */
-            font-size: 36px; /* Slightly larger font size */
+            font-size: 50px; /* Slightly larger font size */
             color: #2A9D8F; /* A teal color */
         }
         </style>
