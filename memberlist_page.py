@@ -12,7 +12,7 @@ def app():
         api_key=st.secrets['cloudinary']['api_key'],        # Your Cloudinary API key
         api_secret=st.secrets['cloudinary']['api_secret']   # Your Cloudinary API secret
     )
-
+    
     # Function to format phone numbers
     def format_phone_number(phone_number):
         """
