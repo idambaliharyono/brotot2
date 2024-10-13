@@ -29,7 +29,7 @@ def main():
         .custom-font {
             font-family: 'Roboto', sans-serif; /* This font is now from Google Fonts */
             font-size: 50px; /* Slightly larger font size */
-            color: #22553C; /* A teal color */
+            color: #28704F; /* A teal color */
         }
         </style>
         """, unsafe_allow_html=True)
